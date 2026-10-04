@@ -1,4 +1,18 @@
 import { create } from 'zustand';
+import { 
+    fetchAllData, 
+    createProjectAction, 
+    renameProjectAction, 
+    deleteProjectAction, 
+    createChatAction, 
+    renameChatAction, 
+    deleteChatAction, 
+    moveChatAction, 
+    createTurnAction, 
+    updateTurnAiResponseAction, 
+    deleteTurnsAction, 
+    reassignTurnParentsAction 
+} from '@/app/actions';
 
 export type Project = { id: string; name: string };
 export type Chat = { id: string; name: string; projectId: string | null };
@@ -18,6 +32,8 @@ export type ConfirmAction =
     | { type: 'deleteTurnCascade'; id: string };
 
 interface ChatState {
+    isInitialized: boolean;
+    isGenerating: boolean;
     viewMode: 'chat' | 'diagram';
     isSidebarOpen: boolean;
     sidebarEditContext: string | null;
@@ -26,6 +42,9 @@ interface ChatState {
     turns: Record<string, ChatTurn>;
     activeChatId: string | null;
     activeTurnId: string | null;
+
+    initializeStore: () => Promise<void>;
+    setGenerating: (isGenerating: boolean) => void;
 
     setViewMode: (mode: 'chat' | 'diagram') => void;
     toggleSidebar: () => void;
@@ -59,6 +78,8 @@ interface ChatState {
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
+    isInitialized: false,
+    isGenerating: false,
     viewMode: 'chat',
     isSidebarOpen: false,
     sidebarEditContext: null,
@@ -69,6 +90,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
     activeTurnId: null,
     confirmState: { isOpen: false, title: '', message: '', action: null },
 
+    initializeStore: async () => {
+        if (get().isInitialized) return;
+        const data = await fetchAllData();
+        
+        const projects: Record<string, Project> = {};
+        data.projects.forEach(p => projects[p.id] = p);
+        
+        const chats: Record<string, Chat> = {};
+        data.chats.forEach(c => chats[c.id] = c);
+        
+        const turns: Record<string, ChatTurn> = {};
+        data.turns.forEach(t => turns[t.id] = t);
+
+        set({ projects, chats, turns, isInitialized: true });
+    },
+    
+    setGenerating: (isGenerating) => set({ isGenerating }),
     setViewMode: (mode) => set({ viewMode: mode }),
     toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
     setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
@@ -84,53 +122,71 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     setActiveTurn: (turnId) => set({ activeTurnId: turnId }),
 
-    addProject: (name) => set((state) => {
+    addProject: (name) => {
         const id = `proj-${Date.now()}`;
-        return { projects: { ...state.projects, [id]: { id, name } } };
-    }),
-    renameProject: (id, name) => set((state) => ({
-        projects: { ...state.projects, [id]: { ...state.projects[id], name } }
-    })),
-    deleteProject: (id) => set((state) => {
-        const newProjects = { ...state.projects };
-        delete newProjects[id];
+        const newProject = { id, name };
+        set((state) => ({ projects: { ...state.projects, [id]: newProject } }));
+        createProjectAction(newProject).catch(console.error);
+    },
+    renameProject: (id, name) => {
+        set((state) => ({
+            projects: { ...state.projects, [id]: { ...state.projects[id], name } }
+        }));
+        renameProjectAction(id, name).catch(console.error);
+    },
+    deleteProject: (id) => {
+        set((state) => {
+            const newProjects = { ...state.projects };
+            delete newProjects[id];
 
-        // Also delete all chats in this project
-        const newChats = { ...state.chats };
-        let chatActive = state.activeChatId;
-        Object.values(newChats).forEach(chat => {
-            if (chat.projectId === id) {
-                delete newChats[chat.id];
-                if (chatActive === chat.id) chatActive = null;
-            }
+            const newChats = { ...state.chats };
+            let chatActive = state.activeChatId;
+            Object.values(newChats).forEach(chat => {
+                if (chat.projectId === id) {
+                    delete newChats[chat.id];
+                    if (chatActive === chat.id) chatActive = null;
+                }
+            });
+
+            return { projects: newProjects, chats: newChats, activeChatId: chatActive };
         });
-
-        return { projects: newProjects, chats: newChats, activeChatId: chatActive };
-    }),
+        deleteProjectAction(id).catch(console.error);
+    },
 
     addChat: (name, projectId) => {
         const id = `chat-${Date.now()}`;
+        const newChat = { id, name, projectId };
         set((state) => ({
-            chats: { ...state.chats, [id]: { id, name, projectId } },
+            chats: { ...state.chats, [id]: newChat },
             activeChatId: id,
             activeTurnId: null
         }));
+        createChatAction(newChat).catch(console.error);
         return id;
     },
-    renameChat: (id, name) => set((state) => ({
-        chats: { ...state.chats, [id]: { ...state.chats[id], name } }
-    })),
-    deleteChat: (id) => set((state) => {
-        const newChats = { ...state.chats };
-        delete newChats[id];
-        return {
-            chats: newChats,
-            activeChatId: state.activeChatId === id ? null : state.activeChatId
-        };
-    }),
-    moveChatToProject: (chatId, projectId) => set((state) => ({
-        chats: { ...state.chats, [chatId]: { ...state.chats[chatId], projectId } }
-    })),
+    renameChat: (id, name) => {
+        set((state) => ({
+            chats: { ...state.chats, [id]: { ...state.chats[id], name } }
+        }));
+        renameChatAction(id, name).catch(console.error);
+    },
+    deleteChat: (id) => {
+        set((state) => {
+            const newChats = { ...state.chats };
+            delete newChats[id];
+            return {
+                chats: newChats,
+                activeChatId: state.activeChatId === id ? null : state.activeChatId
+            };
+        });
+        deleteChatAction(id).catch(console.error);
+    },
+    moveChatToProject: (chatId, projectId) => {
+        set((state) => ({
+            chats: { ...state.chats, [chatId]: { ...state.chats[chatId], projectId } }
+        }));
+        moveChatAction(chatId, projectId).catch(console.error);
+    },
 
     requestConfirm: (title, message, action) => set({
         confirmState: { isOpen: true, title, message, action }
@@ -153,38 +209,56 @@ export const useChatStore = create<ChatState>((set, get) => ({
         closeConfirm();
     },
 
-    addTurn: (turn) => set((state) => {
-        if (!state.activeChatId) return state;
-        return {
-            turns: { ...state.turns, [turn.id]: { ...turn, chatId: state.activeChatId } },
+    addTurn: (turn) => {
+        const state = get();
+        if (!state.activeChatId) return;
+        const newTurn = { ...turn, chatId: state.activeChatId };
+        set((state) => ({
+            turns: { ...state.turns, [turn.id]: newTurn },
             activeTurnId: turn.id,
-        };
-    }),
-    updateAiResponse: (id, response) => set((state) => ({
-        turns: { ...state.turns, [id]: { ...state.turns[id], aiResponse: response } }
-    })),
-    deleteTurnMerge: (id) => set((state) => {
+        }));
+        createTurnAction(newTurn).catch(console.error);
+    },
+    updateAiResponse: (id, response) => {
+        set((state) => ({
+            turns: { ...state.turns, [id]: { ...state.turns[id], aiResponse: response } }
+        }));
+        // Note: For streaming, we might update this many times. It's better to let the AI route update the DB onFinish,
+        // or we debounced DB updates. We can skip calling server action here if we assume the AI route handles it on completion.
+        // updateTurnAiResponseAction(id, response).catch(console.error);
+    },
+    
+    deleteTurnMerge: (id) => {
+        const state = get();
         const nodeToDelete = state.turns[id];
-        if (!nodeToDelete) return state;
+        if (!nodeToDelete) return;
 
         const grandparentId = nodeToDelete.parentId;
         const newTurns = { ...state.turns };
+        
+        const updates: {id: string, parentId: string | null}[] = [];
 
         Object.values(newTurns).forEach((turn) => {
             if (turn.parentId === id) {
                 newTurns[turn.id] = { ...turn, parentId: grandparentId };
+                updates.push({ id: turn.id, parentId: grandparentId });
             }
         });
 
         delete newTurns[id];
-        return {
+        set({
             turns: newTurns,
             activeTurnId: state.activeTurnId === id ? grandparentId : state.activeTurnId
-        };
-    }),
+        });
 
-    // 2. Delete Node & All Children (Cascade)
-    deleteTurnCascade: (id) => set((state) => {
+        // DB updates
+        reassignTurnParentsAction(updates).then(() => {
+            deleteTurnsAction([id]);
+        }).catch(console.error);
+    },
+
+    deleteTurnCascade: (id) => {
+        const state = get();
         const idsToDelete = new Set([id]);
         let size = 0;
         while (idsToDelete.size > size) {
@@ -195,11 +269,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
 
         const newTurns = { ...state.turns };
-        idsToDelete.forEach(deleteId => delete newTurns[deleteId]);
+        const idsArray = Array.from(idsToDelete);
+        idsArray.forEach(deleteId => delete newTurns[deleteId]);
 
-        return {
+        set({
             turns: newTurns,
             activeTurnId: idsToDelete.has(state.activeTurnId!) ? null : state.activeTurnId
-        };
-    }),
+        });
+
+        deleteTurnsAction(idsArray).catch(console.error);
+    },
 }));
