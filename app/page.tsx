@@ -84,13 +84,22 @@ export default function Home() {
                     const { done, value } = await reader.read();
                     if (done) break;
                     
-                    aiText += decoder.decode(value, { stream: true });
-                    updateAiResponse(turnId, aiText);
+                    if (value) {
+                        aiText += decoder.decode(value, { stream: true });
+                        updateAiResponse(turnId, aiText);
+                    }
+                }
+                
+                // If the stream closed cleanly but we received absolutely no text,
+                // the AI SDK likely swallowed an upstream error (like a rate limit)
+                // after sending the 200 OK headers.
+                if (!aiText.trim()) {
+                    throw new Error('The AI returned an empty response. The model may be rate-limited or temporarily unavailable.');
                 }
             }
         } catch (error: any) {
             console.error('Failed to fetch AI response:', error);
-            updateAiResponse(turnId, `⚠️ **Error:** ${error.message || 'Error connecting to the AI.'}`);
+            updateAiResponse(turnId, `**Error:** ${error.message || 'Unable to connect to the AI service. Please verify your API key or network connection.'}`);
         } finally {
             setGenerating(false);
         }
@@ -140,56 +149,54 @@ export default function Home() {
                         {isCentered && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-transparent p-4 z-20">
                                 <h2 className="text-2xl font-medium text-neutral-400 mb-6 tracking-tight">What do you want to build?</h2>
-                                <div className="relative w-full max-w-2xl">
-                                    <input
-                                        autoFocus
-                                        type="text"
-                                        value={input}
-                                        onChange={(e) => setInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                        placeholder="Start typing..."
-                                        disabled={isGenerating}
-                                        className="w-full pl-6 pr-14 py-3.5 bg-neutral-800/50 border border-neutral-700/50 text-neutral-200 rounded-full focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 placeholder-neutral-500 transition-all text-[15px] shadow-lg backdrop-blur-sm disabled:opacity-50"
-                                    />
-                                    <button
-                                        onClick={handleSend}
-                                        disabled={!input.trim() || isGenerating}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-neutral-200 text-neutral-900 rounded-full hover:bg-white disabled:opacity-50 disabled:bg-neutral-700 disabled:text-neutral-500 disabled:cursor-not-allowed transition-colors flex items-center justify-center shadow-sm"
-                                    >
-                                        <Send size={16} />
-                                    </button>
-                                </div>
+                                <ChatInput input={input} setInput={setInput} handleSend={handleSend} isGenerating={isGenerating} isCentered={true} />
                             </div>
                         )}
                     </div>
 
                     {viewMode === 'chat' && !isCentered && (
                         <div className="p-4 bg-transparent border-t border-neutral-800/30 shrink-0 flex justify-center z-10 transition-all duration-300">
-                            <div className="relative w-full max-w-3xl">
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                    placeholder={isGenerating ? "Thinking..." : "Follow up or branch..."}
-                                    disabled={isGenerating}
-                                    className="w-full pl-5 pr-12 py-3 bg-neutral-800/40 border border-neutral-700/50 text-neutral-200 rounded-full focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 placeholder-neutral-500 transition-all text-[14px] shadow-sm backdrop-blur-sm disabled:opacity-50"
-                                />
-                                <button
-                                    onClick={handleSend}
-                                    disabled={!input.trim() || isGenerating}
-                                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 bg-neutral-200 text-neutral-900 rounded-full hover:bg-white disabled:opacity-50 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                                >
-                                    <Send size={14} />
-                                </button>
-                            </div>
+                            <ChatInput input={input} setInput={setInput} handleSend={handleSend} isGenerating={isGenerating} isCentered={false} />
                         </div>
                     )}
                 </div>
             </main>
 
             <ConfirmDialog />
+        </div>
+    );
+}
+
+function ChatInput({ input, setInput, handleSend, isGenerating, isCentered }: {
+    input: string;
+    setInput: (val: string) => void;
+    handleSend: () => void;
+    isGenerating: boolean;
+    isCentered: boolean;
+}) {
+    return (
+        <div className={`relative w-full ${isCentered ? 'max-w-2xl' : 'max-w-3xl'}`}>
+            <input
+                autoFocus
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder={isGenerating ? "Thinking..." : (isCentered ? "Start typing..." : "Follow up or branch...")}
+                disabled={isGenerating}
+                className={`w-full border border-neutral-700/50 text-neutral-200 rounded-full focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 placeholder-neutral-500 transition-all backdrop-blur-sm disabled:opacity-50 ${
+                    isCentered ? 'pl-6 pr-14 py-3.5 bg-neutral-800/50 text-[15px] shadow-lg' : 'pl-5 pr-12 py-3 bg-neutral-800/40 text-[14px] shadow-sm'
+                }`}
+            />
+            <button
+                onClick={handleSend}
+                disabled={!input.trim() || isGenerating}
+                className={`absolute top-1/2 -translate-y-1/2 p-2 bg-neutral-200 text-neutral-900 rounded-full hover:bg-white disabled:opacity-50 disabled:bg-neutral-700 disabled:text-neutral-500 disabled:cursor-not-allowed transition-colors flex items-center justify-center ${
+                    isCentered ? 'right-2 shadow-sm' : 'right-1.5'
+                }`}
+            >
+                <Send size={isCentered ? 16 : 14} />
+            </button>
         </div>
     );
 }

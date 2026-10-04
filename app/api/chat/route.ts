@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY,
-  //compatibility: 'compatible', // sometimes strict or compatible helps with 3rd party
+  compatibility: 'compatible',
 });
 
 export async function POST(req: Request) {
@@ -16,22 +16,40 @@ export async function POST(req: Request) {
       model: openrouter('qwen/qwen3.8-27b:free'),
       messages,
       onFinish: async ({ text }) => {
-        if (turnId) {
-          try {
-            await prisma.turn.update({
-              where: { id: turnId },
-              data: { aiResponse: text },
-            });
-          } catch (dbErr) {
-            console.error("DB Update Error:", dbErr);
-          }
+        if (!turnId) return;
+        try {
+          await prisma.turn.update({
+            where: { id: turnId },
+            data: { aiResponse: text },
+          });
+        } catch (dbErr) {
+          console.error("Database Update Error:", dbErr);
         }
       },
     });
 
     return result.toTextStreamResponse();
   } catch (error: any) {
-    console.error("OpenRouter Error:", error);
-    return new Response(error.message || 'Unknown AI API error', { status: 500 });
+    console.error("AI Provider Error:", error);
+    
+    let errorMessage = error.message || 'An unknown error occurred while communicating with the AI service.';
+    
+    if (typeof error.responseBody === 'string') {
+      try {
+        const bodyObj = JSON.parse(error.responseBody);
+        const extractedMsg = bodyObj?.error?.metadata?.raw || bodyObj?.error?.message;
+        if (extractedMsg) {
+          errorMessage = extractedMsg;
+        }
+      } catch (parseErr) {
+        // Suppress parsing errors and retain the default message
+      }
+    }
+
+    if (error.statusCode === 429 && !errorMessage.includes('rate')) {
+      errorMessage = "The model is currently experiencing high traffic and is rate-limited. Please try again shortly.";
+    }
+
+    return new Response(errorMessage, { status: 500 });
   }
 }

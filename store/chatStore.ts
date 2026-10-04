@@ -9,7 +9,6 @@ import {
     deleteChatAction, 
     moveChatAction, 
     createTurnAction, 
-    updateTurnAiResponseAction, 
     deleteTurnsAction, 
     reassignTurnParentsAction 
 } from '@/app/actions';
@@ -223,9 +222,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set((state) => ({
             turns: { ...state.turns, [id]: { ...state.turns[id], aiResponse: response } }
         }));
-        // Note: For streaming, we might update this many times. It's better to let the AI route update the DB onFinish,
-        // or we debounced DB updates. We can skip calling server action here if we assume the AI route handles it on completion.
-        // updateTurnAiResponseAction(id, response).catch(console.error);
     },
     
     deleteTurnMerge: (id) => {
