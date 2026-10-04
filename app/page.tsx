@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useChatStore } from '@/store/chatStore';
 import DiagramView from '@/components/DiagramView';
 import ChatView from '@/components/ChatView';
@@ -12,7 +12,7 @@ export default function Home() {
     const [input, setInput] = useState('');
     
     const hasChats = Object.keys(chats).length > 0;
-    const hasTurns = activeChatId ? Object.values(turns).some(t => t.chatId === activeChatId) : false;
+    const hasTurns = useMemo(() => activeChatId ? Object.values(turns).some(t => t.chatId === activeChatId) : false, [turns, activeChatId]);
     const isCentered = !hasTurns && viewMode === 'chat';
 
     useEffect(() => {

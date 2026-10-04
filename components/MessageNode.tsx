@@ -1,8 +1,9 @@
 import { Handle, Position } from '@xyflow/react';
 import { useChatStore } from '@/store/chatStore';
 import { Trash2, ArrowUpToLine, MessageSquare } from 'lucide-react';
+import { memo } from 'react';
 
-export default function MessageNode({ id, data }: { id: string, data: any }) {
+export default memo(function MessageNode({ id, data }: { id: string, data: any }) {
     const activeTurnId = useChatStore((state) => state.activeTurnId);
     const setActiveTurn = useChatStore((state) => state.setActiveTurn);
     const requestConfirm = useChatStore((state) => state.requestConfirm);
@@ -72,4 +73,4 @@ export default function MessageNode({ id, data }: { id: string, data: any }) {
             <Handle type="source" position={Position.Bottom} className="!opacity-0" />
         </div>
     );
-}
+})

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { ReactFlow, Background, Controls, Edge, Node, BackgroundVariant, Position } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useChatStore } from '@/store/chatStore';
@@ -46,7 +46,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
     return { nodes: layoutedNodes, edges };
 };
 
-export default function DiagramView() {
+export default memo(function DiagramView() {
     const turns = useChatStore((state) => state.turns);
     const activeChatId = useChatStore((state) => state.activeChatId);
 
@@ -82,4 +82,4 @@ export default function DiagramView() {
             </ReactFlow>
         </div>
     );
-}
+})

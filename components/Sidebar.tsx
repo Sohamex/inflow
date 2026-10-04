@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo, useMemo } from 'react';
 import { useChatStore } from '@/store/chatStore';
 import { Folder, MessageSquare, Plus, ChevronDown, ChevronRight, Hash, Edit2, Trash2, PanelLeft } from 'lucide-react';
 
@@ -27,7 +27,7 @@ function InlineEdit({ initialValue, onSubmit, onCancel }: { initialValue: string
     );
 }
 
-export default function Sidebar() {
+export default memo(function Sidebar() {
     const {
         isSidebarOpen, projects, chats, activeChatId, setActiveChat,
         addProject, renameProject, requestConfirm,
@@ -39,6 +39,9 @@ export default function Sidebar() {
     const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
 
     const toggleProject = (id: string) => setExpandedProjects(prev => ({ ...prev, [id]: !prev[id] }));
+
+    const standaloneChats = useMemo(() => Object.values(chats).filter(c => !c.projectId), [chats]);
+    const projectList = useMemo(() => Object.values(projects), [projects]);
 
     return (
         <div className={`${isSidebarOpen ? 'w-64 border-neutral-800/50' : 'w-0 border-transparent'} h-full bg-neutral-800 border-r flex flex-col text-[13px] text-neutral-400 shrink-0 overflow-hidden transition-all duration-300 ease-in-out`}>
@@ -70,7 +73,7 @@ export default function Sidebar() {
                 )}
 
                 {/* STANDALONE CHATS */}
-                {Object.values(chats).filter(c => !c.projectId).map(chat => (
+                {standaloneChats.map(chat => (
                     <div 
                         key={chat.id} 
                         draggable 
@@ -106,7 +109,7 @@ export default function Sidebar() {
                 )}
 
                 {/* PROJECTS */}
-                {Object.values(projects).map(project => {
+                {projectList.map(project => {
                     const projectChats = Object.values(chats).filter(c => c.projectId === project.id);
                     const isExpanded = expandedProjects[project.id];
 
@@ -191,4 +194,4 @@ export default function Sidebar() {
             </div>
         </div>
     );
-}
+})

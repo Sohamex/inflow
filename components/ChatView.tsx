@@ -1,8 +1,8 @@
 import { useChatStore } from '@/store/chatStore';
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, memo } from 'react';
 import { GitMerge, ArrowUpToLine } from 'lucide-react';
 
-export default function ChatView() {
+export default memo(function ChatView() {
     const { turns, activeTurnId, setActiveTurn, projects, chats, setSidebarOpen, setSidebarEditContext, requestConfirm } = useChatStore();
     const endRef = useRef<HTMLDivElement>(null);
 
@@ -85,4 +85,4 @@ export default function ChatView() {
             </div>
         </div>
     );
-}
+})
