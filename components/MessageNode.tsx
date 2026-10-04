@@ -17,7 +17,7 @@ export default function MessageNode({ id, data }: { id: string, data: any }) {
             <Handle type="target" position={Position.Top} className="!opacity-0" />
 
             <div className={`w-6 h-6 rounded-full border-2 transition-all duration-200 z-10
-        ${isActive ? 'bg-blue-500 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.6)] scale-125' : 'bg-neutral-800 border-neutral-600 group-hover:border-neutral-400 group-hover:scale-110'}
+        ${isActive ? 'bg-neutral-300 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)] scale-125' : 'bg-neutral-800 border-neutral-600 group-hover:border-neutral-400 group-hover:scale-110'}
       `} />
 
             {/* Action Buttons Container */}
@@ -29,7 +29,7 @@ export default function MessageNode({ id, data }: { id: string, data: any }) {
                         setActiveTurn(id);
                         setViewMode('chat');
                     }}
-                    className="p-1.5 bg-neutral-800 border border-neutral-700 text-blue-400 rounded-md hover:bg-neutral-700 shadow-sm"
+                    className="p-1.5 bg-neutral-800 border border-neutral-700 text-neutral-300 rounded-md hover:bg-neutral-700 shadow-sm"
                 >
                     <MessageSquare size={12} />
                 </button>

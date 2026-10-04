@@ -74,10 +74,10 @@ export default function DiagramView() {
     }, [turns, activeChatId]); // Ensure activeChatId is in dependencies
 
     return (
-        <div className="w-full h-full bg-neutral-950">
-            <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView colorMode="dark">
+        <div className="w-full h-full bg-neutral-900">
+            <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: 0.8 }} colorMode="dark">
                 {/* Changed to Lines for Grid effect */}
-                <Background variant={BackgroundVariant.Lines} gap={30} color="#1f1f1f" />
+                <Background variant={BackgroundVariant.Lines} gap={30} color="#2a2a2a" />
                 <Controls className="!bg-neutral-800 !fill-neutral-300 !border-neutral-700" />
             </ReactFlow>
         </div>

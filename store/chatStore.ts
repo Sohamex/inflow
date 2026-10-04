@@ -40,9 +40,10 @@ interface ChatState {
     deleteProject: (id: string) => void;
 
     // Chats
-    addChat: (name: string, projectId: string | null) => void;
+    addChat: (name: string, projectId: string | null) => string;
     renameChat: (id: string, name: string) => void;
     deleteChat: (id: string) => void;
+    moveChatToProject: (chatId: string, projectId: string | null) => void;
 
     // Turns (Nodes)
     addTurn: (turn: Omit<ChatTurn, 'chatId'>) => void;
@@ -107,14 +108,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return { projects: newProjects, chats: newChats, activeChatId: chatActive };
     }),
 
-    addChat: (name, projectId) => set((state) => {
+    addChat: (name, projectId) => {
         const id = `chat-${Date.now()}`;
-        return {
+        set((state) => ({
             chats: { ...state.chats, [id]: { id, name, projectId } },
             activeChatId: id,
             activeTurnId: null
-        };
-    }),
+        }));
+        return id;
+    },
     renameChat: (id, name) => set((state) => ({
         chats: { ...state.chats, [id]: { ...state.chats[id], name } }
     })),
@@ -126,6 +128,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             activeChatId: state.activeChatId === id ? null : state.activeChatId
         };
     }),
+    moveChatToProject: (chatId, projectId) => set((state) => ({
+        chats: { ...state.chats, [chatId]: { ...state.chats[chatId], projectId } }
+    })),
 
     requestConfirm: (title, message, action) => set({
         confirmState: { isOpen: true, title, message, action }
