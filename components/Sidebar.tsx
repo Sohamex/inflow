@@ -52,7 +52,7 @@ export default memo(function Sidebar() {
                 </button>
                 <div className="flex gap-2 items-center">
                     <button onClick={() => setEditContext('new-project')} title="New Project" className="p-1.5 hover:text-neutral-200 text-neutral-500 hover:bg-neutral-700/50 rounded-lg transition-colors"><Folder size={15} /></button>
-                    <button onClick={() => setEditContext('new-chat-standalone')} title="New Chat" className="p-1.5 hover:text-neutral-200 text-neutral-500 hover:bg-neutral-700/50 rounded-lg transition-colors"><Plus size={16} /></button>
+                    <button onClick={() => addChat('New Chat', null)} title="New Chat" className="p-1.5 hover:text-neutral-200 text-neutral-500 hover:bg-neutral-700/50 rounded-lg transition-colors"><Plus size={16} /></button>
                 </div>
             </div>
 
@@ -64,13 +64,6 @@ export default memo(function Sidebar() {
                     if (chatId) moveChatToProject(chatId, null);
                 }}
             >
-
-                {/* NEW STANDALONE CHAT INPUT */}
-                {editContext === 'new-chat-standalone' && (
-                    <div className="px-2 py-1">
-                        <InlineEdit initialValue="New Chat" onSubmit={(v) => { addChat(v, null); setEditContext(null); }} onCancel={() => setEditContext(null)} />
-                    </div>
-                )}
 
                 {/* STANDALONE CHATS */}
                 {standaloneChats.map(chat => (
@@ -137,7 +130,7 @@ export default memo(function Sidebar() {
                                 </div>
                                 {editContext !== `rename-project-${project.id}` && (
                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 shrink-0">
-                                        <button onClick={(e) => { e.stopPropagation(); setExpandedProjects(p => ({ ...p, [project.id]: true })); setEditContext(`new-chat-project-${project.id}`); }} className="hover:text-white"><Plus size={12} /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); setExpandedProjects(p => ({ ...p, [project.id]: true })); addChat('New Chat', project.id); }} className="hover:text-white"><Plus size={12} /></button>
                                         <button onClick={(e) => { e.stopPropagation(); setEditContext(`rename-project-${project.id}`); }} className="hover:text-white"><Edit2 size={12} /></button>
                                         <button onClick={(e) => {
                                             e.stopPropagation();
@@ -149,14 +142,6 @@ export default memo(function Sidebar() {
 
                             {isExpanded && (
                                 <div className="pl-6 pr-2 mt-1 space-y-1">
-
-                                    {/* NEW PROJECT CHAT INPUT */}
-                                    {editContext === `new-chat-project-${project.id}` && (
-                                        <div className="px-2 py-1">
-                                            <InlineEdit initialValue="New Chat" onSubmit={(v) => { addChat(v, project.id); setEditContext(null); }} onCancel={() => setEditContext(null)} />
-                                        </div>
-                                    )}
-
                                     {/* PROJECT CHATS */}
                                     {projectChats.map(chat => (
                                         <div 

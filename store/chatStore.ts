@@ -102,7 +102,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const turns: Record<string, ChatTurn> = {};
         data.turns.forEach(t => turns[t.id] = t);
 
-        set({ projects, chats, turns, isInitialized: true });
+        let activeChatId = null;
+        let activeTurnId = null;
+
+        if (typeof window !== 'undefined') {
+            const savedChat = sessionStorage.getItem('activeChatId');
+            const savedTurn = sessionStorage.getItem('activeTurnId');
+            if (savedChat && chats[savedChat]) {
+                activeChatId = savedChat;
+                if (savedTurn && turns[savedTurn] && turns[savedTurn].chatId === savedChat) {
+                    activeTurnId = savedTurn;
+                } else {
+                    const chatTurns = Object.values(turns).filter(t => t.chatId === savedChat);
+                    activeTurnId = chatTurns.length > 0 ? chatTurns[chatTurns.length - 1].id : null;
+                }
+            }
+        }
+
+        set({ projects, chats, turns, isInitialized: true, activeChatId, activeTurnId });
     },
     
     setGenerating: (isGenerating) => set({ isGenerating }),
@@ -112,14 +129,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
     setSidebarEditContext: (context) => set({ sidebarEditContext: context }),
 
     setActiveChat: (chatId) => {
-        if (!chatId) return set({ activeChatId: null, activeTurnId: null });
+        if (!chatId) {
+            if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('activeChatId');
+                sessionStorage.removeItem('activeTurnId');
+            }
+            return set({ activeChatId: null, activeTurnId: null });
+        }
         const { turns } = get();
         const chatTurns = Object.values(turns).filter(t => t.chatId === chatId);
         const lastTurnId = chatTurns.length > 0 ? chatTurns[chatTurns.length - 1].id : null;
+        
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('activeChatId', chatId);
+            if (lastTurnId) sessionStorage.setItem('activeTurnId', lastTurnId);
+            else sessionStorage.removeItem('activeTurnId');
+        }
+        
         set({ activeChatId: chatId, activeTurnId: lastTurnId });
     },
 
-    setActiveTurn: (turnId) => set({ activeTurnId: turnId }),
+    setActiveTurn: (turnId) => {
+        if (typeof window !== 'undefined') {
+            if (turnId) sessionStorage.setItem('activeTurnId', turnId);
+            else sessionStorage.removeItem('activeTurnId');
+        }
+        set({ activeTurnId: turnId });
+    },
 
     addProject: (name) => {
         const id = `proj-${Date.now()}`;
@@ -155,6 +191,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     addChat: (name, projectId) => {
         const id = `chat-${Date.now()}`;
         const newChat = { id, name, projectId };
+        
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('activeChatId', id);
+            sessionStorage.removeItem('activeTurnId');
+        }
+        
         set((state) => ({
             chats: { ...state.chats, [id]: newChat },
             activeChatId: id,
@@ -173,9 +215,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set((state) => {
             const newChats = { ...state.chats };
             delete newChats[id];
+            
+            let newActive = state.activeChatId;
+            if (newActive === id) {
+                newActive = null;
+                if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('activeChatId');
+                    sessionStorage.removeItem('activeTurnId');
+                }
+            }
+            
             return {
                 chats: newChats,
-                activeChatId: state.activeChatId === id ? null : state.activeChatId
+                activeChatId: newActive,
+                activeTurnId: newActive === null ? null : state.activeTurnId
             };
         });
         deleteChatAction(id).catch(console.error);

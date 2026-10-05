@@ -5,13 +5,13 @@ import DiagramView from '@/components/DiagramView';
 import ChatView from '@/components/ChatView';
 import Sidebar from '@/components/Sidebar';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { MessageSquare, GitMerge, Send, PanelLeft } from 'lucide-react';
+import { MessageSquare, GitMerge, Send, PanelLeft, Plus } from 'lucide-react';
 
 export default function Home() {
     const { 
         viewMode, setViewMode, toggleSidebar, activeTurnId, activeChatId, 
         addTurn, updateAiResponse, isSidebarOpen, chats, turns, addChat,
-        initializeStore, isInitialized, isGenerating, setGenerating
+        initializeStore, isInitialized, isGenerating, setGenerating, renameChat
     } = useChatStore();
     
     const [input, setInput] = useState('');
@@ -40,13 +40,19 @@ export default function Home() {
         const currentInput = input;
         setInput(''); // Clear immediately
 
-        // Auto-create chat if there is no active chat
         let currentChatId = activeChatId;
         if (!currentChatId) {
             const words = currentInput.trim().split(/\s+/);
             const chatName = words.slice(0, 3).join(' ') || 'New Chat';
             currentChatId = addChat(chatName, null);
             currentActiveTurnId = null;
+        } else if (chats[currentChatId]?.name === 'New Chat') {
+            const chatTurns = Object.values(turns).filter(t => t.chatId === currentChatId);
+            if (chatTurns.length === 0) {
+                const words = currentInput.trim().split(/\s+/);
+                const chatName = words.slice(0, 3).join(' ') || 'New Chat';
+                renameChat(currentChatId, chatName);
+            }
         }
 
         const turnId = `turn-${Date.now()}`;
@@ -117,9 +123,14 @@ export default function Home() {
                 <header className="h-14 border-b border-neutral-800/50 flex items-center justify-between px-4 shrink-0 bg-neutral-900/80 backdrop-blur-md z-10">
                     <div className="flex items-center gap-4">
                         {!isSidebarOpen && (
-                            <button onClick={toggleSidebar} className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 rounded-lg transition-colors -ml-1.5">
-                                <PanelLeft size={18} />
-                            </button>
+                            <div className="flex items-center gap-1 -ml-1.5">
+                                <button onClick={toggleSidebar} title="Open Sidebar" className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 rounded-lg transition-colors">
+                                    <PanelLeft size={18} />
+                                </button>
+                                <button onClick={() => addChat('New Chat', null)} title="New Chat" className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 rounded-lg transition-colors">
+                                    <Plus size={18} />
+                                </button>
+                            </div>
                         )}
                         <h1 className="font-semibold text-sm tracking-wide text-neutral-200">InFlow</h1>
                     </div>
