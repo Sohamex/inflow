@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useChatStore } from '@/store/chatStore';
 import DiagramView from '@/components/DiagramView';
 import ChatView from '@/components/ChatView';
@@ -8,8 +9,12 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { MessageSquare, GitMerge, Send, PanelLeft, Plus } from 'lucide-react';
 
 export default function Home() {
+    const params = useParams();
+    const router = useRouter();
+    const routeChatId = params.chatId?.[0] || null;
+
     const { 
-        viewMode, setViewMode, toggleSidebar, activeTurnId, activeChatId, 
+        viewMode, setViewMode, toggleSidebar, activeTurnId, activeChatId, setActiveChat,
         addTurn, updateAiResponse, isSidebarOpen, chats, turns, addChat,
         initializeStore, isInitialized, isGenerating, setGenerating, renameChat
     } = useChatStore();
@@ -21,6 +26,18 @@ export default function Home() {
             initializeStore();
         }
     }, [isInitialized, initializeStore]);
+
+    useEffect(() => {
+        if (isInitialized) {
+            setActiveChat(routeChatId);
+        }
+    }, [routeChatId, isInitialized, setActiveChat]);
+
+    useEffect(() => {
+        if (isInitialized && routeChatId && !chats[routeChatId]) {
+            router.push('/');
+        }
+    }, [isInitialized, routeChatId, chats, router]);
 
     const hasChats = Object.keys(chats).length > 0;
     const hasTurns = useMemo(() => activeChatId ? Object.values(turns).some(t => t.chatId === activeChatId) : false, [turns, activeChatId]);
@@ -45,6 +62,7 @@ export default function Home() {
             const words = currentInput.trim().split(/\s+/);
             const chatName = words.slice(0, 3).join(' ') || 'New Chat';
             currentChatId = addChat(chatName, null);
+            router.push(`/${currentChatId}`);
             currentActiveTurnId = null;
         } else if (chats[currentChatId]?.name === 'New Chat') {
             const chatTurns = Object.values(turns).filter(t => t.chatId === currentChatId);
@@ -127,7 +145,10 @@ export default function Home() {
                                 <button onClick={toggleSidebar} title="Open Sidebar" className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 rounded-lg transition-colors">
                                     <PanelLeft size={18} />
                                 </button>
-                                <button onClick={() => addChat('New Chat', null)} title="New Chat" className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 rounded-lg transition-colors">
+                                <button onClick={() => {
+                                    const id = addChat('New Chat', null);
+                                    router.push(`/${id}`);
+                                }} title="New Chat" className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50 rounded-lg transition-colors">
                                     <Plus size={18} />
                                 </button>
                             </div>

@@ -102,24 +102,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const turns: Record<string, ChatTurn> = {};
         data.turns.forEach(t => turns[t.id] = t);
 
-        let activeChatId = null;
-        let activeTurnId = null;
-
-        if (typeof window !== 'undefined') {
-            const savedChat = sessionStorage.getItem('activeChatId');
-            const savedTurn = sessionStorage.getItem('activeTurnId');
-            if (savedChat && chats[savedChat]) {
-                activeChatId = savedChat;
-                if (savedTurn && turns[savedTurn] && turns[savedTurn].chatId === savedChat) {
-                    activeTurnId = savedTurn;
-                } else {
-                    const chatTurns = Object.values(turns).filter(t => t.chatId === savedChat);
-                    activeTurnId = chatTurns.length > 0 ? chatTurns[chatTurns.length - 1].id : null;
-                }
-            }
-        }
-
-        set({ projects, chats, turns, isInitialized: true, activeChatId, activeTurnId });
+        set({ projects, chats, turns, isInitialized: true });
     },
     
     setGenerating: (isGenerating) => set({ isGenerating }),
@@ -129,33 +112,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     setSidebarEditContext: (context) => set({ sidebarEditContext: context }),
 
     setActiveChat: (chatId) => {
-        if (!chatId) {
-            if (typeof window !== 'undefined') {
-                sessionStorage.removeItem('activeChatId');
-                sessionStorage.removeItem('activeTurnId');
-            }
-            return set({ activeChatId: null, activeTurnId: null });
-        }
+        if (!chatId) return set({ activeChatId: null, activeTurnId: null });
         const { turns } = get();
         const chatTurns = Object.values(turns).filter(t => t.chatId === chatId);
         const lastTurnId = chatTurns.length > 0 ? chatTurns[chatTurns.length - 1].id : null;
-        
-        if (typeof window !== 'undefined') {
-            sessionStorage.setItem('activeChatId', chatId);
-            if (lastTurnId) sessionStorage.setItem('activeTurnId', lastTurnId);
-            else sessionStorage.removeItem('activeTurnId');
-        }
-        
         set({ activeChatId: chatId, activeTurnId: lastTurnId });
     },
 
-    setActiveTurn: (turnId) => {
-        if (typeof window !== 'undefined') {
-            if (turnId) sessionStorage.setItem('activeTurnId', turnId);
-            else sessionStorage.removeItem('activeTurnId');
-        }
-        set({ activeTurnId: turnId });
-    },
+    setActiveTurn: (turnId) => set({ activeTurnId: turnId }),
 
     addProject: (name) => {
         const id = `proj-${Date.now()}`;
@@ -191,12 +155,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     addChat: (name, projectId) => {
         const id = `chat-${Date.now()}`;
         const newChat = { id, name, projectId };
-        
-        if (typeof window !== 'undefined') {
-            sessionStorage.setItem('activeChatId', id);
-            sessionStorage.removeItem('activeTurnId');
-        }
-        
         set((state) => ({
             chats: { ...state.chats, [id]: newChat },
             activeChatId: id,
@@ -219,10 +177,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
             let newActive = state.activeChatId;
             if (newActive === id) {
                 newActive = null;
-                if (typeof window !== 'undefined') {
-                    sessionStorage.removeItem('activeChatId');
-                    sessionStorage.removeItem('activeTurnId');
-                }
             }
             
             return {

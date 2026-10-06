@@ -1,4 +1,5 @@
 import { useState, memo, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useChatStore } from '@/store/chatStore';
 import { Folder, MessageSquare, Plus, ChevronDown, ChevronRight, Hash, Edit2, Trash2, PanelLeft } from 'lucide-react';
 
@@ -28,6 +29,7 @@ function InlineEdit({ initialValue, onSubmit, onCancel }: { initialValue: string
 }
 
 export default memo(function Sidebar() {
+    const router = useRouter();
     const {
         isSidebarOpen, projects, chats, activeChatId, setActiveChat,
         addProject, renameProject, requestConfirm,
@@ -52,7 +54,10 @@ export default memo(function Sidebar() {
                 </button>
                 <div className="flex gap-2 items-center">
                     <button onClick={() => setEditContext('new-project')} title="New Project" className="p-1.5 hover:text-neutral-200 text-neutral-500 hover:bg-neutral-700/50 rounded-lg transition-colors"><Folder size={15} /></button>
-                    <button onClick={() => addChat('New Chat', null)} title="New Chat" className="p-1.5 hover:text-neutral-200 text-neutral-500 hover:bg-neutral-700/50 rounded-lg transition-colors"><Plus size={16} /></button>
+                    <button onClick={() => {
+                        const id = addChat('New Chat', null);
+                        router.push(`/${id}`);
+                    }} title="New Chat" className="p-1.5 hover:text-neutral-200 text-neutral-500 hover:bg-neutral-700/50 rounded-lg transition-colors"><Plus size={16} /></button>
                 </div>
             </div>
 
@@ -72,7 +77,7 @@ export default memo(function Sidebar() {
                         draggable 
                         onDragStart={(e) => { e.dataTransfer.setData('chatId', chat.id); }}
                         className={`group flex items-center justify-between px-3 py-2 rounded-lg transition-all cursor-pointer ${activeChatId === chat.id ? 'bg-neutral-700/50 text-neutral-200 shadow-sm' : 'hover:bg-neutral-700/30 hover:text-neutral-300'}`} 
-                        onClick={() => setActiveChat(chat.id)}
+                        onClick={() => router.push(`/${chat.id}`)}
                     >
                         <div className="flex items-center gap-2 overflow-hidden flex-1 mr-2">
                             <MessageSquare size={14} className={`shrink-0 ${activeChatId === chat.id ? 'text-neutral-300' : 'text-neutral-500'}`} />
@@ -130,7 +135,12 @@ export default memo(function Sidebar() {
                                 </div>
                                 {editContext !== `rename-project-${project.id}` && (
                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 shrink-0">
-                                        <button onClick={(e) => { e.stopPropagation(); setExpandedProjects(p => ({ ...p, [project.id]: true })); addChat('New Chat', project.id); }} className="hover:text-white"><Plus size={12} /></button>
+                                        <button onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            setExpandedProjects(p => ({ ...p, [project.id]: true })); 
+                                            const id = addChat('New Chat', project.id); 
+                                            router.push(`/${id}`);
+                                        }} className="hover:text-white"><Plus size={12} /></button>
                                         <button onClick={(e) => { e.stopPropagation(); setEditContext(`rename-project-${project.id}`); }} className="hover:text-white"><Edit2 size={12} /></button>
                                         <button onClick={(e) => {
                                             e.stopPropagation();
@@ -149,7 +159,7 @@ export default memo(function Sidebar() {
                                             draggable 
                                             onDragStart={(e) => { e.dataTransfer.setData('chatId', chat.id); }}
                                             className={`group flex items-center justify-between px-3 py-1.5 rounded-lg transition-all cursor-pointer ${activeChatId === chat.id ? 'bg-neutral-700/50 text-neutral-200 shadow-sm' : 'hover:bg-neutral-700/30 hover:text-neutral-300'}`} 
-                                            onClick={() => setActiveChat(chat.id)}
+                                            onClick={() => router.push(`/${chat.id}`)}
                                         >
                                             <div className="flex items-center gap-2 overflow-hidden flex-1 mr-2">
                                                 <Hash size={14} className={`shrink-0 ${activeChatId === chat.id ? 'text-neutral-300' : 'text-neutral-500'}`} />
