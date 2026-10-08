@@ -1,6 +1,6 @@
-# InFlow
+# Non-Linear
 
-InFlow is a modern, non-linear AI chat interface designed to help you explore ideas without constraints. Instead of traditional, single-threaded chat logs, InFlow allows you to branch conversations, visualize your chat history as an interactive map, and cleanly organize everything into projects.
+Non-Linear is a modern, non-linear AI chat interface designed to help you explore ideas without constraints. Instead of traditional, single-threaded chat logs, Non-Linear allows you to branch conversations, visualize your chat history as an interactive map, and cleanly organize everything into projects.
 
 ## Features
 

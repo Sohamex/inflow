@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# InFlow Project Guidelines for AI Agents
+# Non-Linear Project Guidelines for AI Agents
 
 When working on this codebase, please strictly adhere to the following rules and project conventions to maintain performance, aesthetic consistency, and architectural integrity.
 

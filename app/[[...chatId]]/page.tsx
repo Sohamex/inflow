@@ -130,7 +130,7 @@ export default function Home() {
     };
 
     if (!isInitialized) {
-        return <div className="flex h-screen w-full bg-neutral-900 items-center justify-center text-neutral-400">Loading InFlow...</div>;
+        return <div className="flex h-screen w-full bg-neutral-900 items-center justify-center text-neutral-400">Loading Non-Linear...</div>;
     }
 
     return (
@@ -153,7 +153,7 @@ export default function Home() {
                                 </button>
                             </div>
                         )}
-                        <h1 className="font-semibold text-sm tracking-wide text-neutral-200">InFlow</h1>
+                        <h1 className="font-semibold text-sm tracking-wide text-neutral-200">Non-Linear</h1>
                     </div>
 
                     {hasTurns && (
